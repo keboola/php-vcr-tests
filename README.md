@@ -1,9 +1,9 @@
 # keboola/php-vcr-tests
 
-Record the HTTP traffic of a PHP component's datadir tests once, and replay it offline in CI, with no change to
-the component code. The PHP side of [keboola.vcr](https://github.com/keboola/python-vcr-tests): the recording
+Record the HTTP traffic of a PHP component's tests once, and replay it offline in CI, with no change to the
+component code. The PHP side of [keboola.vcr](https://github.com/keboola/python-vcr-tests): the recording
 proxy (`python -m keboola.vcr.proxy`, a mitmproxy addon) does the recording, sanitizing and replay; this package
-only tells the proxy which datadir case is running.
+only tells the proxy which datadir case or test method is running.
 
 - Cassettes use the keboola.vcr format, in the same place as for Python components:
   `tests/<suite>/<case>/source/data/cassettes/requests.json`. The cassette validator and
@@ -11,7 +11,7 @@ only tells the proxy which datadir case is running.
 - Sanitizers are declared in `tests/vcr.json` (the proxy reads it), not in component code.
 - Without the proxy (`VCR_CONTROL_URL` unset) nothing changes: the tests run live as before.
 
-Requirements: PHP 7.4 or newer, `keboola/datadir-tests` 5.x or 6.x, a Debian-based test image (for
+Requirements: PHP 7.4 or newer, PHPUnit 9 to 11 (`keboola/datadir-tests` 5.x or 6.x for the datadir trait), a Debian-based test image (for
 `update-ca-certificates`), and HTTP clients that honour `HTTPS_PROXY` (Guzzle does, unless the code passes its own
 `proxy` option).
 
@@ -55,6 +55,27 @@ Requirements: PHP 7.4 or newer, `keboola/datadir-tests` 5.x or 6.x, a Debian-bas
 
    If the class overrides `getTempDatadir()` or `runScript()` itself, its method wins over the trait: call the
    client from there (`VcrControlClient::fromEnvironment()`, `start()`, `status()`; the trait still ends the case).
+
+   **Tests that are not datadir cases** (they call the API from the PHPUnit process, or run the component with
+   Symfony Process from a test method) use `VcrTestCaseTrait` instead, in any PHPUnit `TestCase`:
+
+   ```php
+   use Keboola\VcrTests\VcrTestCaseTrait;
+
+   class FunctionalTest extends TestCase
+   {
+       use VcrTestCaseTrait;
+   }
+   ```
+
+   - One cassette per test method and data set: `<test class dir>/cassettes/<ShortClass>/<method>[@<data set>].json`
+     (override `vcrCassetteDirectory()` to move it; keep it under the mounted `tests/` directory).
+   - The cassette starts before `setUp()` and ends after `tearDown()` (`@before`/`@after` hooks, also as PHPUnit 10+
+     attributes), so live set-up and clean-up calls are recorded and replayed with the test. Random names created in
+     `setUp()` come back from the cassette on replay; requests that carry them need `match.ignore_body_fields` or a
+     `UrlPatternSanitizer` in `tests/vcr.json` only when the test itself generates them (`uniqid()`, dates).
+   - `$this->vcrSkipInReplay('reason')` keeps a test live-only: it is skipped in replay.
+   - Do not use both traits in one class.
 
 3. Declare secrets and sanitizers in `tests/vcr.json`:
 
