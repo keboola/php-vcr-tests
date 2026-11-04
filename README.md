@@ -11,7 +11,7 @@ only tells the proxy which datadir case or test method is running.
 - Sanitizers are declared in `tests/vcr.json` (the proxy reads it), not in component code.
 - Without the proxy (`VCR_CONTROL_URL` unset) nothing changes: the tests run live as before.
 
-Requirements: PHP 7.4 or newer, PHPUnit 9 to 11 (`keboola/datadir-tests` 5.x or 6.x for the datadir trait), a Debian-based test image (for
+Requirements: PHP 7.2 or newer, PHPUnit 6.5 to 11 for `VcrTestCaseTrait` (`keboola/datadir-tests` 5.x or 6.x, so PHP 7.3+ and PHPUnit 9+, for the datadir trait), a Debian-based test image (for
 `update-ca-certificates`), and HTTP clients that honour `HTTPS_PROXY` (Guzzle does, unless the code passes its own
 `proxy` option).
 
@@ -39,7 +39,7 @@ Requirements: PHP 7.4 or newer, PHPUnit 9 to 11 (`keboola/datadir-tests` 5.x or 
 
    ```bash
    composer config repositories.php-vcr-tests vcs https://github.com/keboola/php-vcr-tests
-   composer require --dev keboola/php-vcr-tests:^0.1
+   composer require --dev keboola/php-vcr-tests:^0.2
    ```
 
 2. Use the trait in the datadir test class:
