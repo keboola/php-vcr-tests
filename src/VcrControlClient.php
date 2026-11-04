@@ -62,6 +62,16 @@ final class VcrControlClient
     }
 
     /**
+     * The active case so far, without ending it.
+     *
+     * @return array<string, mixed> with "unmatched" (requests with no recorded answer) and "errors" (recording)
+     */
+    public function status(): array
+    {
+        return $this->call('GET', '/status', null);
+    }
+
+    /**
      * @return array<string, mixed> with "unmatched" (list of requests with no recorded answer) and, on error, "error"
      */
     public function stop(): array
@@ -75,16 +85,20 @@ final class VcrControlClient
      */
     private function post(string $path, array $payload): array
     {
-        $body = (string) json_encode($payload === [] ? new \stdClass() : $payload);
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'POST',
-                'header' => "Content-Type: application/json\r\nContent-Length: " . strlen($body),
-                'content' => $body,
-                'timeout' => $this->timeout,
-                'ignore_errors' => true,
-            ],
-        ]);
+        return $this->call('POST', $path, (string) json_encode($payload === [] ? new \stdClass() : $payload));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function call(string $method, string $path, ?string $body): array
+    {
+        $options = ['method' => $method, 'timeout' => $this->timeout, 'ignore_errors' => true];
+        if ($body !== null) {
+            $options['header'] = "Content-Type: application/json\r\nContent-Length: " . strlen($body);
+            $options['content'] = $body;
+        }
+        $context = stream_context_create(['http' => $options]);
         $url = $this->baseUrl . $path;
         $response = @file_get_contents($url, false, $context);
         if ($response === false) {

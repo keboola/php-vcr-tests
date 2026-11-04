@@ -16,7 +16,7 @@ abstract class FakeProxyTestCase extends TestCase
     /**
      * Starts the fake control port; $stopAnswer is what /stop returns (JSON).
      */
-    protected function startFakeProxy(?string $stopAnswer = null): string
+    protected function startFakeProxy(?string $stopAnswer = null, ?string $statusAnswer = null): string
     {
         $this->logFile = (string) tempnam(sys_get_temp_dir(), 'vcr-log');
         $socket = stream_socket_server('tcp://127.0.0.1:0');
@@ -27,6 +27,9 @@ abstract class FakeProxyTestCase extends TestCase
         $env = ['FAKE_VCR_LOG' => $this->logFile];
         if ($stopAnswer !== null) {
             $env['FAKE_VCR_STOP'] = $stopAnswer;
+        }
+        if ($statusAnswer !== null) {
+            $env['FAKE_VCR_STATUS'] = $statusAnswer;
         }
         $this->server = new Process(['php', '-S', $address, __DIR__ . '/fixtures/control-router.php'], null, $env);
         $this->server->start();

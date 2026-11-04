@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 // Fake control port of the recording proxy, for `php -S`. Logs each call to $FAKE_VCR_LOG and answers /stop with
-// the JSON in $FAKE_VCR_STOP (default: no unmatched requests).
+// the JSON in $FAKE_VCR_STOP and /status with $FAKE_VCR_STATUS (default: no unmatched requests).
 
 $log = (string) getenv('FAKE_VCR_LOG');
 $uri = (string) parse_url((string) $_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -19,6 +19,10 @@ if ($uri === '/start') {
         return;
     }
     echo json_encode(['mode' => 'replay', 'cassette' => $payload['cassette'], 'interactions' => 1]);
+    return;
+}
+if ($uri === '/status') {
+    echo getenv('FAKE_VCR_STATUS') ?: json_encode(['mode' => 'replay', 'active' => true, 'unmatched' => [], 'errors' => []]);
     return;
 }
 if ($uri === '/stop') {

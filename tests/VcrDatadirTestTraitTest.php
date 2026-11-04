@@ -32,7 +32,12 @@ class VcrDatadirTestTraitTest extends FakeProxyTestCase
             }
         };
         $test->prepare();
-        $test->testDatadir(new DatadirTestSpecification($this->caseDir() . '/source/data', 0, null, null, null));
+        $spec = new DatadirTestSpecification($this->caseDir() . '/source/data', 0, null, null, null);
+        try {
+            $test->testDatadir($spec);
+        } finally {
+            $test->vcrStopCase(); // PHPUnit calls it as an @after hook
+        }
     }
 
     public function testStartsTheCaseCassetteAndStops(): void
@@ -41,13 +46,11 @@ class VcrDatadirTestTraitTest extends FakeProxyTestCase
         $this->runCase();
 
         $calls = $this->calls();
-        self::assertCount(2, $calls);
-        self::assertSame('/start', $calls[0]['path']);
+        self::assertSame(['/start', '/status', '/stop'], array_column($calls, 'path'));
         self::assertSame(
             (string) realpath($this->caseDir() . '/source/data') . '/cassettes/requests.json',
             $calls[0]['body']['cassette']
         );
-        self::assertSame('/stop', $calls[1]['path']);
     }
 
     public function testFailsWhenReplayHadUnmatchedRequests(): void
@@ -66,6 +69,26 @@ class VcrDatadirTestTraitTest extends FakeProxyTestCase
             self::assertStringContainsString('1 request(s) had no recorded answer', $e->getMessage());
             self::assertStringContainsString('GET https://api.example.com/items', $e->getMessage());
         }
+    }
+
+    public function testFailsRightAfterTheRunWhenReplayMissed(): void
+    {
+        $status = (string) json_encode([
+            'mode' => 'replay',
+            'active' => true,
+            'cassette' => '/x/requests.json',
+            'unmatched' => ['POST https://api.example.com/batch (no recorded interaction matches)'],
+            'errors' => [],
+        ]);
+        putenv('VCR_CONTROL_URL=' . $this->startFakeProxy(null, $status));
+        try {
+            $this->runCase();
+            self::fail('expected the case to fail');
+        } catch (AssertionFailedError $e) {
+            self::assertStringContainsString('POST https://api.example.com/batch', $e->getMessage());
+        }
+        // the case is still ended
+        self::assertSame(['/start', '/status', '/stop'], array_column($this->calls(), 'path'));
     }
 
     public function testFailsWhenRecordingRefusedToWrite(): void

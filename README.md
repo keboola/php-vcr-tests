@@ -22,14 +22,16 @@ Requirements: PHP 7.4 or newer, `keboola/datadir-tests` 5.x or 6.x, a Debian-bas
  ┌──────────────────────────────┐   HTTPS_PROXY    ┌──────────────────────────────────────────┐
  │ phpunit  ── POST /start ──────┼───────────────▶ │ :8081 control: active cassette per case   │
  │   └─ php src/run.php ─────────┼── :8080 ──────▶ │ :8080 mitmproxy: record (live, sanitize)  │
- │ phpunit  ── POST /stop  ──────┼───────────────▶ │        or replay (offline, from cassette) │
+ │ phpunit  ── /status, /stop ───┼───────────────▶ │        or replay (offline, from cassette) │
  └──────────────────────────────┘                  └──────────────────────────────────────────┘
 ```
 
 1. `VcrDatadirTestTrait::getTempDatadir()` calls `POST /start` with the case's cassette path.
 2. The component process inherits `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY` from the container environment.
-3. `VcrDatadirTestTrait::runScript()` calls `POST /stop` after the component ran. Record mode writes the sanitized
-   cassette; replay mode returns the requests that had no recorded answer, and the trait fails the case with them.
+3. `VcrDatadirTestTrait::runScript()` calls `GET /status` after each component run and fails the case at once if
+   replay saw a request with no recorded answer. The case stays open, so a test may run the component twice.
+4. After the test (`@after` hook `vcrStopCase()`), `POST /stop` ends the case. Record mode writes the sanitized
+   cassette then.
 
 ## Set up a component
 
@@ -51,8 +53,8 @@ Requirements: PHP 7.4 or newer, `keboola/datadir-tests` 5.x or 6.x, a Debian-bas
    }
    ```
 
-   If the class overrides `getTempDatadir()` or `runScript()` itself, its method wins over the trait: call the trait
-   logic from there (`VcrControlClient::fromEnvironment()->start(...)` / `->stop()`).
+   If the class overrides `getTempDatadir()` or `runScript()` itself, its method wins over the trait: call the
+   client from there (`VcrControlClient::fromEnvironment()`, `start()`, `status()`; the trait still ends the case).
 
 3. Declare secrets and sanitizers in `tests/vcr.json`:
 
