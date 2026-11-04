@@ -110,20 +110,32 @@ Requirements: PHP 7.4 or newer, `keboola/datadir-tests` 5.x or 6.x, a Debian-bas
 
 ## Record and replay
 
+Both run locally in the component's compose stack: the component's own image (its PHP version and extensions) plus
+the proxy container. Python components record in-process and need neither.
+
 ```bash
 # replay, offline, no secrets (what CI runs on every pull request)
 docker compose run --rm tests-vcr
 
-# record all cases against the live API: secrets in the shell environment (never commit them)
+# record all cases against the live API: credentials in the folder's git-ignored .env (never commit them)
 VCR_MODE=record docker compose run --rm tests-vcr
 
 # record one case: delete its cassette, then filter
 VCR_MODE=record docker compose run --rm tests-vcr sh -c "vendor/bin/vcr-trust-ca && vendor/bin/phpunit tests/datadir --filter 'testDatadir@<case>'"
 ```
 
-Record mode overwrites the cassette of every case it runs. Before you commit a recording, check it: in the
-keboola/components repo run `tools/component cassettes <folder>` and the `component-developer:vcr-cassette-validator`
-agent (secrets, personal data, and that each case recorded what it claims).
+Record mode overwrites the cassette of every case it runs. The proxy refuses to write a cassette that still holds
+the value of a `secret_env` variable. Before you commit a recording, check it: in the keboola/components repo run
+`tools/component cassettes <folder>` and the `component-developer:vcr-cassette-validator` agent (secrets, personal
+data, and that each case recorded what it claims).
+
+**Credentials only in GitHub?** Some test credentials exist only as GitHub environment secrets (copied there during
+the monorepo migration, unreadable to anyone). Then record in a `workflow_dispatch` job that runs the same compose
+command with those secrets and uploads only the cassettes as an artifact. Example: `.github/workflows/ex-onedrive.yml`
+in keboola/components.
+
+**Not supported: recording a platform debug job.** The proxy is a second container, and a platform job runs only the
+component image. Python components can do it in-process (`VCRRecorder.record_debug_run`).
 
 ## What the proxy matches on
 
