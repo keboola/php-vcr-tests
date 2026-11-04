@@ -80,8 +80,8 @@ Requirements: PHP 7.4 or newer, `keboola/datadir-tests` 5.x or 6.x, a Debian-bas
          context: .
          dockerfile_inline: |
            FROM python:3.13-slim
-           ARG VCR_REF=v0.8.0
-           RUN pip install --no-cache-dir "keboola.vcr[proxy] @ https://github.com/keboola/python-vcr-tests/archive/$${VCR_REF}.tar.gz"
+           ARG KEBOOLA_VCR_VERSION=0.8.0
+           RUN pip install --no-cache-dir "keboola.vcr[proxy]==$${KEBOOLA_VCR_VERSION}"
        command: python -m keboola.vcr.proxy --config /code/tests/vcr.json --confdir /vcr-ca
        environment:
          - VCR_MODE=${VCR_MODE:-replay}
