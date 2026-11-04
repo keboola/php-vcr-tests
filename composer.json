@@ -1,0 +1,50 @@
+{
+    "name": "keboola/php-vcr-tests",
+    "description": "Record and replay the HTTP traffic of datadir tests through the keboola.vcr recording proxy",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "keboola",
+        "vcr",
+        "datadir-tests",
+        "mitmproxy",
+        "testing"
+    ],
+    "require": {
+        "php": ">=7.4",
+        "ext-json": "*"
+    },
+    "require-dev": {
+        "keboola/datadir-tests": "^5.2 || ^6.0",
+        "phpunit/phpunit": "^9.6 || ^10.5 || ^11.0",
+        "symfony/process": "^5.4 || ^6.0 || ^7.0"
+    },
+    "suggest": {
+        "keboola/datadir-tests": "VcrDatadirTestTrait hooks into AbstractDatadirTestCase (5.x and 6.x)"
+    },
+    "autoload": {
+        "psr-4": {
+            "Keboola\\VcrTests\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Keboola\\VcrTests\\Tests\\": "tests/"
+        }
+    },
+    "bin": [
+        "bin/vcr-trust-ca"
+    ],
+    "scripts": {
+        "lint": "find src tests -name '*.php' -print0 | xargs -0 -n1 php -l",
+        "tests": "phpunit",
+        "ci": [
+            "@composer validate --strict",
+            "@lint",
+            "@tests"
+        ]
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

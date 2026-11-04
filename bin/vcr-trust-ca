@@ -1,0 +1,19 @@
+#!/bin/sh
+# Trust the recording proxy's CA in this (Debian-based) test container, so curl/Guzzle accept its certificates.
+# Usage: vendor/bin/vcr-trust-ca [path-to-mitmproxy-ca-cert.pem]   (default /vcr-ca/mitmproxy-ca-cert.pem)
+# Waits up to 30 s for the file: the proxy writes it when it starts. Needs root (update-ca-certificates).
+set -eu
+ca=${1:-/vcr-ca/mitmproxy-ca-cert.pem}
+i=0
+while [ ! -s "$ca" ]; do
+  i=$((i + 1))
+  if [ "$i" -gt 30 ]; then
+    echo "vcr-trust-ca: $ca not found; is the vcr proxy running with --confdir on the shared volume?" >&2
+    exit 1
+  fi
+  sleep 1
+done
+mkdir -p /usr/local/share/ca-certificates
+cp "$ca" /usr/local/share/ca-certificates/keboola-vcr-proxy.crt
+update-ca-certificates > /dev/null
+echo "vcr-trust-ca: proxy CA trusted"
