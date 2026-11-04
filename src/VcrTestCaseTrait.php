@@ -25,9 +25,11 @@ use ReflectionClass;
  */
 trait VcrTestCaseTrait
 {
-    private ?VcrControlClient $vcrTestClient = null;
+    /** @var VcrControlClient|null */
+    private $vcrTestClient = null;
 
-    private bool $vcrTestActive = false;
+    /** @var bool */
+    private $vcrTestActive = false;
 
     /**
      * Starts the test's cassette. Runs before setUp().

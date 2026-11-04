@@ -25,9 +25,11 @@ use Symfony\Component\Process\Process;
  */
 trait VcrDatadirTestTrait
 {
-    private ?VcrControlClient $vcrClient = null;
+    /** @var VcrControlClient|null */
+    private $vcrClient = null;
 
-    private bool $vcrCaseActive = false;
+    /** @var bool */
+    private $vcrCaseActive = false;
 
     public static function vcrCassettePath(string $sourceDatadirDirectory): string
     {

@@ -30,3 +30,30 @@ jobs:
         with:
           dependency-versions: ${{ matrix.deps }}
       - run: composer ci
+
+  # PHP 7.2/7.3 components (PHPUnit 6 to 8): the library's own suite needs PHPUnit 9, so a smoke test runs
+  # VcrTestCaseTrait against the fake control port instead.
+  legacy:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - phpunit: '^6.5'
+            fixture: tests/legacy/HookExampleLegacy.php
+            class: HookExampleLegacy
+          - phpunit: '^8.5'
+            fixture: tests/fixtures/hook/HookExample.php
+            class: HookExample
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.2'
+          coverage: none
+      - name: Lint the shipped code on PHP 7.2
+        run: |
+          find src -name '*.php' -print0 | xargs -0 -n1 php -l
+          php -l bin/vcr-trust-ca
+      - name: VcrTestCaseTrait with PHPUnit ${{ matrix.phpunit }}
+        run: tests/legacy/smoke.sh '${{ matrix.phpunit }}' ${{ matrix.fixture }} ${{ matrix.class }}

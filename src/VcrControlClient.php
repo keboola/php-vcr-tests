@@ -17,9 +17,11 @@ final class VcrControlClient
     public const ENV_CONTROL_URL = 'VCR_CONTROL_URL';
     public const ENV_MODE = 'VCR_MODE';
 
-    private string $baseUrl;
+    /** @var string */
+    private $baseUrl;
 
-    private float $timeout;
+    /** @var float */
+    private $timeout;
 
     public function __construct(string $baseUrl, float $timeout = 30.0)
     {
